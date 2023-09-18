@@ -1,48 +1,54 @@
 package com.example.goodmorning;
 
-import androidx.appcompat.app.AppCompatActivity;
-
-import android.os.Bundle;
-
 import android.content.Intent;
-import android.os.Bundle;
 import android.net.Uri;
+import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.TextView;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+
+    private RecyclerView recyclerView;
+    private ContactAdapter contactAdapter;
+    private List<Contact> contacts = new ArrayList<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Button buttonSendMessages = findViewById(R.id.buttonSendMessages);
+        recyclerView = findViewById(R.id.recyclerView);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
+        // Add contacts with unique IDs
+        contacts.add(new Contact("+XXXXXXXXXX", "Good Morning Bro", 1));
+        contacts.add(new Contact("+XXXXXXXXXX", "Good Morning Mother", 2));
+        contacts.add(new Contact("+XXXXXXXXXX", "Good Morning Father", 3));
+        contacts.add(new Contact("+XXXXXXXXXX", "Good Morning Sister", 4));
+
+        contactAdapter = new ContactAdapter(contacts);
+        recyclerView.setAdapter(contactAdapter);
+
+        Button buttonSendMessages = findViewById(R.id.buttonSendMessages);
         buttonSendMessages.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String[] contacts = {
-                        "+XXXXXXXXXX",
-                        "+XXXXXXXXXX",
-                        "+XXXXXXXXXX",
-                        "+XXXXXXXXXX",
-                };
-
-                String[] messages = {
-                        "Good Morning Bro",
-                        "Good Morning Mother",
-                        "Good Morning Father",
-                        "Good Morning Sister",
-                };
-
-                for (int i = 0; i < contacts.length; i++) {
-                    System.out.println(i);
-                    sendWhatsAppMessage(contacts[i], messages[i]);
+                for (Contact contact : contacts) {
+                    sendWhatsAppMessage(contact.getPhoneNumber(), contact.getMessage());
                 }
             }
         });
     }
+
     private void sendWhatsAppMessage(String phoneNumber, String message) {
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setData(Uri.parse("https://wa.me/" + phoneNumber + "/?text=" + message));
@@ -64,6 +70,64 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 // The user did not click the send button
             }
+        }
+    }
+
+    private class ContactAdapter extends RecyclerView.Adapter<ContactViewHolder> {
+
+        private List<Contact> contacts;
+
+        public ContactAdapter(List<Contact> contacts) {
+            this.contacts = contacts;
+        }
+
+        @NonNull
+        @Override
+        public ContactViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.list_item, parent, false);
+            return new ContactViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull ContactViewHolder holder, int position) {
+            Contact contact = contacts.get(position);
+            holder.textContact.setText(contact.getPhoneNumber());
+            holder.textMessage.setText(contact.getMessage());
+
+            // Set a click listener for the "Delete" button
+            holder.buttonDelete.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    // Remove the clicked contact from the list based on its ID
+                    for (Contact contact : contacts) {
+                        if (contact.getId() == position + 1) {
+                            contacts.remove(contact);
+                            break;
+                        }
+                    }
+                    // Notify the adapter about the change
+                    notifyDataSetChanged();
+                }
+            });
+        }
+
+        @Override
+        public int getItemCount() {
+            return contacts.size();
+        }
+    }
+
+    private class ContactViewHolder extends RecyclerView.ViewHolder {
+        TextView textContact;
+        TextView textMessage;
+        Button buttonDelete;
+
+        public ContactViewHolder(@NonNull View itemView) {
+            super(itemView);
+            textContact = itemView.findViewById(R.id.textContact);
+            textMessage = itemView.findViewById(R.id.textMessage);
+            buttonDelete = itemView.findViewById(R.id.buttonDelete);
         }
     }
 }
