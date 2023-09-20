@@ -20,6 +20,7 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private ContactAdapter contactAdapter;
     private List<Contact> contacts = new ArrayList<>();
+    private static final int EDIT_CONTACT_REQUEST_CODE = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,11 +65,18 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == 1) {
+        if (requestCode == EDIT_CONTACT_REQUEST_CODE) {
             if (resultCode == RESULT_OK) {
-                // The user clicked the send button
-            } else {
-                // The user did not click the send button
+                // Check if it's a delete action
+                if (data.hasExtra("deletePosition")) {
+                    int deletePosition = data.getIntExtra("deletePosition", -1);
+                    if (deletePosition != -1) {
+                        // Remove the contact from the list and update the adapter
+                        int position = deletePosition;
+                        contacts.remove(position);
+                        contactAdapter.notifyItemRemoved(position);
+                    }
+                }
             }
         }
     }
@@ -95,19 +103,16 @@ public class MainActivity extends AppCompatActivity {
             holder.textContact.setText(contact.getPhoneNumber());
             holder.textMessage.setText(contact.getMessage());
 
-            // Set a click listener for the "Delete" button
-            holder.buttonDelete.setOnClickListener(new View.OnClickListener() {
+            // Set a click listener for the "Edit" button
+            holder.buttonEdit.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    // Remove the clicked contact from the list based on its ID
-                    for (Contact contact : contacts) {
-                        if (contact.getId() == position + 1) {
-                            contacts.remove(contact);
-                            break;
-                        }
-                    }
-                    // Notify the adapter about the change
-                    notifyDataSetChanged();
+                    // Start EditActivity to edit the contact
+                    Intent editIntent = new Intent(MainActivity.this, EditActivity.class);
+                    editIntent.putExtra("phoneNumber", contact.getPhoneNumber());
+                    editIntent.putExtra("message", contact.getMessage());
+                    editIntent.putExtra("position", holder.getAdapterPosition());
+                    startActivityForResult(editIntent, EDIT_CONTACT_REQUEST_CODE);
                 }
             });
         }
@@ -121,13 +126,13 @@ public class MainActivity extends AppCompatActivity {
     private class ContactViewHolder extends RecyclerView.ViewHolder {
         TextView textContact;
         TextView textMessage;
-        Button buttonDelete;
+        Button buttonEdit;
 
         public ContactViewHolder(@NonNull View itemView) {
             super(itemView);
             textContact = itemView.findViewById(R.id.textContact);
             textMessage = itemView.findViewById(R.id.textMessage);
-            buttonDelete = itemView.findViewById(R.id.buttonDelete);
+            buttonEdit = itemView.findViewById(R.id.buttonEdit);
         }
     }
 }
