@@ -1,53 +1,100 @@
 package com.example.goodmorning;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.Button;
-import android.widget.TextView;
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import java.util.ArrayList;
-import java.util.List;
+import android.widget.ListView;
+import android.widget.Toast;
 
-public class MainActivity extends AppCompatActivity {
-
-    private RecyclerView recyclerView;
-    private ContactAdapter contactAdapter;
-    private List<Contact> contacts = new ArrayList<>();
-    private static final int EDIT_CONTACT_REQUEST_CODE = 1;
-
+public class MainActivity extends AppCompatActivity
+{
+    private ListView ContactListView;
+    private Button sendButton;
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState)
+    {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        initWidgets();
+        loadFromDBToMemory();
+        setContactAdapter();
+        setOnClickListener();
+    }
 
-        recyclerView = findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        // Add contacts with unique IDs
-        contacts.add(new Contact("+XXXXXXXXXX", "Good Morning Bro", 1));
-        contacts.add(new Contact("+XXXXXXXXXX", "Good Morning Mother", 2));
-        contacts.add(new Contact("+XXXXXXXXXX", "Good Morning Father", 3));
-        contacts.add(new Contact("+XXXXXXXXXX", "Good Morning Sister", 4));
+    private void initWidgets()
+    {
+        ContactListView = findViewById(R.id.AutomateListView);
+        sendButton = findViewById(R.id.Send);
+    }
 
-        contactAdapter = new ContactAdapter(contacts);
-        recyclerView.setAdapter(contactAdapter);
+    private void loadFromDBToMemory()
+    {
+        SQLiteManager sqLiteManager = SQLiteManager.instanceOfDatabase(this);
+        sqLiteManager.populateContactListArray();
+    }
 
-        Button buttonSendMessages = findViewById(R.id.buttonSendMessages);
-        buttonSendMessages.setOnClickListener(new View.OnClickListener() {
+    private void setContactAdapter()
+    {
+        ContactAdapter ContactAdapter = new ContactAdapter(getApplicationContext(), Contact.nonDeletedContacts());
+        ContactListView.setAdapter(ContactAdapter);
+    }
+
+
+    private void setOnClickListener()
+    {
+        ContactListView.setOnItemClickListener(new AdapterView.OnItemClickListener()
+        {
             @Override
-            public void onClick(View view) {
-                for (Contact contact : contacts) {
-                    sendWhatsAppMessage(contact.getPhoneNumber(), contact.getMessage());
-                }
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l)
+            {
+                Contact selectedContact = (Contact) ContactListView.getItemAtPosition(position);
+                Intent editContactIntent = new Intent(getApplicationContext(), EditActivity.class);
+                editContactIntent.putExtra(Contact.Contact_EDIT_EXTRA, selectedContact.getId());
+                startActivity(editContactIntent);
             }
         });
+
+        sendButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Call a method to retrieve and display the data
+                displayPhoneNumbersAndMessages();
+            }
+        });
+    }
+
+
+    public void newContact(View view)
+    {
+        Intent newContactIntent = new Intent(this, EditActivity.class);
+        startActivity(newContactIntent);
+    }
+
+    @Override
+    protected void onResume()
+    {
+        super.onResume();
+        setContactAdapter();
+    }
+    private void displayPhoneNumbersAndMessages() {
+        for (Contact Contact : Contact.nonDeletedContacts()) {
+            String phoneNumber = Contact.getNumber(); // Get the phone number from the title field
+            String messageText = Contact.getmsg(); // Get the message from the description field
+
+            // Check if both phone number and message are not null or empty
+            if (phoneNumber != null && !phoneNumber.isEmpty() && messageText != null && !messageText.isEmpty()) {
+                // Call the sendWhatsAppMessage method with phone number and message
+                sendWhatsAppMessage(phoneNumber, messageText);
+            }
+        }
+
+        // You can choose to display a confirmation message here if needed.
     }
 
     private void sendWhatsAppMessage(String phoneNumber, String message) {
@@ -56,83 +103,8 @@ public class MainActivity extends AppCompatActivity {
         intent.setPackage("com.whatsapp");
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra("sms_body", message);
-
         int requestCode = 1;
         startActivityForResult(intent, requestCode);
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == EDIT_CONTACT_REQUEST_CODE) {
-            if (resultCode == RESULT_OK) {
-                // Check if it's a delete action
-                if (data.hasExtra("deletePosition")) {
-                    int deletePosition = data.getIntExtra("deletePosition", -1);
-                    if (deletePosition != -1) {
-                        // Remove the contact from the list and update the adapter
-                        int position = deletePosition;
-                        contacts.remove(position);
-                        contactAdapter.notifyItemRemoved(position);
-                    }
-                }
-            }
-        }
-    }
-
-    private class ContactAdapter extends RecyclerView.Adapter<ContactViewHolder> {
-
-        private List<Contact> contacts;
-
-        public ContactAdapter(List<Contact> contacts) {
-            this.contacts = contacts;
-        }
-
-        @NonNull
-        @Override
-        public ContactViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.list_item, parent, false);
-            return new ContactViewHolder(view);
-        }
-
-        @Override
-        public void onBindViewHolder(@NonNull ContactViewHolder holder, int position) {
-            Contact contact = contacts.get(position);
-            holder.textContact.setText(contact.getPhoneNumber());
-            holder.textMessage.setText(contact.getMessage());
-
-            // Set a click listener for the "Edit" button
-            holder.buttonEdit.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    // Start EditActivity to edit the contact
-                    Intent editIntent = new Intent(MainActivity.this, EditActivity.class);
-                    editIntent.putExtra("phoneNumber", contact.getPhoneNumber());
-                    editIntent.putExtra("message", contact.getMessage());
-                    editIntent.putExtra("position", holder.getAdapterPosition());
-                    startActivityForResult(editIntent, EDIT_CONTACT_REQUEST_CODE);
-                }
-            });
-        }
-
-        @Override
-        public int getItemCount() {
-            return contacts.size();
-        }
-    }
-
-    private class ContactViewHolder extends RecyclerView.ViewHolder {
-        TextView textContact;
-        TextView textMessage;
-        Button buttonEdit;
-
-        public ContactViewHolder(@NonNull View itemView) {
-            super(itemView);
-            textContact = itemView.findViewById(R.id.textContact);
-            textMessage = itemView.findViewById(R.id.textMessage);
-            buttonEdit = itemView.findViewById(R.id.buttonEdit);
-        }
-    }
 }

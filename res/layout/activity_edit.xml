@@ -1,0 +1,92 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp"
+    tools:context=".EditActivity">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/Toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="73dp"
+        android:minHeight="?actionBarSize"
+        android:theme="?actionBarTheme">
+
+        <ImageView
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:src="@drawable/contacticon"
+            android:textAlignment="center"
+            android:layout_gravity="center_horizontal">
+        </ImageView>
+
+        <Button
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:backgroundTint="@color/white"
+            android:onClick="saveContact"
+            android:textAllCaps="false"
+            android:text="Save"
+            android:letterSpacing="0"
+            android:textColor="#517ce3"
+            android:textSize="25sp"
+            android:textStyle="bold" />
+    </androidx.appcompat.widget.Toolbar>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="15dp"
+        android:layout_margin="35dp"
+        android:background="@drawable/rounded_corner">
+        <Spinner
+            android:id="@+id/contactSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="16dp"/>
+
+        <EditText
+            android:id="@+id/phNumberEdit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:hint="Number"
+            android:layout_marginTop="5dp"
+            android:padding="12dp"
+            android:layout_margin="10dp"
+            android:layout_centerHorizontal="true"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"/>
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/phMsgEdit"
+            android:hint="Message"
+            android:layout_gravity="center"
+            android:padding="10dp"
+            android:layout_margin="10dp"
+            android:lines="1"
+            android:gravity="top"/>
+        <Button
+            android:id="@+id/deleteContactButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="DELETE"
+            android:textSize="25sp"
+            android:backgroundTint="@color/white"
+            android:textColor="@color/red"
+            android:textStyle="bold"
+            android:layout_gravity="center"
+            android:layout_marginTop="20dp"
+            android:onClick="deleteContact"/>
+
+    </LinearLayout>
+
+</LinearLayout>

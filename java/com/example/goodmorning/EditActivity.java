@@ -1,67 +1,97 @@
 package com.example.goodmorning;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import androidx.appcompat.app.AppCompatActivity;
+import android.widget.Spinner;
+
+import java.util.Date;
 
 public class EditActivity extends AppCompatActivity {
-
-    private EditText editPhoneNumber;
-    private EditText editMessage;
-    private Button buttonSave;
-    private Button buttonDelete;
-
-    private int contactPosition; // To identify the position of the contact being edited
+    private EditText NumberEditText, msgEditText;
+    private Button deleteButton;
+    private Contact selectedContact;
+    private static final int PERMISSIONS_REQUEST_READ_CONTACTS = 100;
+    private Spinner contactSpinner;
+    private ArrayAdapter<String> contactAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.edit_activity);
+        setContentView(R.layout.activity_edit);
 
-        editPhoneNumber = findViewById(R.id.editPhoneNumber);
-        editMessage = findViewById(R.id.editMessage);
-        buttonSave = findViewById(R.id.buttonSave);
-        buttonDelete = findViewById(R.id.buttonDelete);
+        initWidgets();
+        checkForEditContact();
 
-        // Get the contact details and position from the intent
-        String phoneNumber = getIntent().getStringExtra("phoneNumber");
-        String message = getIntent().getStringExtra("message");
-        contactPosition = getIntent().getIntExtra("position", -1);
-
-        editPhoneNumber.setText(phoneNumber);
-        editMessage.setText(message);
-
-        buttonSave.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // Get the edited contact details
-                String editedPhoneNumber = editPhoneNumber.getText().toString();
-                String editedMessage = editMessage.getText().toString();
-
-                // Set the edited data as the result to be sent back to MainActivity
-                Intent resultIntent = new Intent();
-                resultIntent.putExtra("editedPhoneNumber", editedPhoneNumber);
-                resultIntent.putExtra("editedMessage", editedMessage);
-                resultIntent.putExtra("position", contactPosition);
-
-                setResult(RESULT_OK, resultIntent);
-                finish();
-            }
-        });
-
-        buttonDelete.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // Set the delete action and the position to be deleted as the result
-                Intent resultIntent = new Intent();
-                resultIntent.putExtra("deletePosition", contactPosition);
-
-                setResult(RESULT_OK, resultIntent);
-                finish();
-            }
-        });
+        // Request permission to read contacts if not already granted
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.READ_CONTACTS)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_CONTACTS},
+                    PERMISSIONS_REQUEST_READ_CONTACTS);
+        } else {
+            // Permission already granted, load contacts
+//            loadContacts();
+        }
     }
+
+    private void initWidgets() {
+        NumberEditText = findViewById(R.id.phNumberEdit);
+        msgEditText = findViewById(R.id.phMsgEdit);
+        deleteButton = findViewById(R.id.deleteContactButton);
+        contactSpinner = findViewById(R.id.contactSpinner);
+    }
+
+    private void checkForEditContact() {
+        Intent previousIntent = getIntent();
+        int passedContactID = previousIntent.getIntExtra(Contact.Contact_EDIT_EXTRA, -1);
+        selectedContact = Contact.getContactForID(passedContactID);
+
+        if (selectedContact != null) {
+            // Set the Number (phone number) in NumberEditText
+            NumberEditText.setText(selectedContact.getNumber());
+            msgEditText.setText(selectedContact.getmsg());
+        } else {
+            deleteButton.setVisibility(View.INVISIBLE);
+        }
+    }
+
+
+    public void saveContact(View view) {
+        SQLiteManager sqLiteManager = SQLiteManager.instanceOfDatabase(this);
+        String Number = String.valueOf(NumberEditText.getText());
+        String msg = String.valueOf(msgEditText.getText());
+
+        if(selectedContact == null)
+        {
+            int id = Contact.ContactArrayList.size();
+            Contact newContact = new Contact(id, Number, msg);
+            Contact.ContactArrayList.add(newContact);
+            sqLiteManager.addContactToDatabase(newContact);
+        }
+        else
+        {
+            selectedContact.setNumber(Number);
+            selectedContact.setmsg(msg);
+            sqLiteManager.updateContactInDB(selectedContact);
+        }
+
+        finish();
+    }
+
+    public void deleteContact(View view) {
+        selectedContact.setDeleted(new Date());
+        SQLiteManager sqLiteManager = SQLiteManager.instanceOfDatabase(this);
+        sqLiteManager.updateContactInDB(selectedContact);
+        finish();
+    }
+
 }
